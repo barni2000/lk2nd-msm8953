@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/include/ "msm8952.dtsi"
+
+/ {
+	model = "Xiaomi Redmi 5A (riva)";
+	compatible = "xiaomi,riva", "qcom,msm8917", "lk2nd,device";
+	qcom,msm-id = <303 0>, <308 0>, <309 0>;
+	qcom,board-id= <0x1000b 2>, <0x2000b 2>;
+
+	lk2nd,pstore = <0xb0000000 0x800000>;
+};
