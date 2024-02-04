@@ -321,6 +321,7 @@ static void lk2nd_parse_panels(const void *fdt, int offset)
 static void lk2nd_parse_device_node(const void *fdt)
 {
 	const uint32_t *pstore = NULL;
+	const char *ts_compatible, *ts;
 	int len;
 	int offset = lk2nd_find_device_offset(fdt);
 	if (offset < 0) {
@@ -345,6 +346,15 @@ static void lk2nd_parse_device_node(const void *fdt)
 
 	if (lk2nd_dev.panel.name)
 		lk2nd_parse_panels(fdt, offset);
+
+	ts = fdt_getprop_str(fdt, offset, "touchscreen-compatible", &len);
+	if (ts && len > 0) {
+	  lk2nd_dev.ts_compatible = malloc(len);
+	  ASSERT(lk2nd_dev.ts_compatible);
+	  strlcpy((char*) lk2nd_dev.ts_compatible, ts, len + 1);
+
+	  dprintf(INFO, "Found touchscreen-compatible: %s\n", lk2nd_dev.ts_compatible);
+  }
 }
 
 
@@ -427,6 +437,20 @@ void lk2nd_init(void)
 	lk2nd_handle_multislot();
 }
 
+static void lk2nd_update_touchscreen_compatible(void* fdt, const char* compatible) {
+  int offset, ret;
+
+	if (compatible) {
+		offset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+		if (offset < 0)
+			return;
+
+		ret = fdt_nop_property(fdt, offset, "status");
+		if (ret)
+			dprintf(CRITICAL, "Failed to NOP touchscreen status: %d\n", ret);
+	}
+}
+
 static void lk2nd_update_panel_compatible(void *fdt)
 {
 	struct lk2nd_panel *panel = &lk2nd_dev.panel;
@@ -443,17 +467,6 @@ static void lk2nd_update_panel_compatible(void *fdt)
 	ret = fdt_setprop(fdt, offset, "compatible", panel->compatible, panel->compatible_size);
 	if (ret)
 		dprintf(CRITICAL, "Failed to update panel compatible: %d\n", ret);
-
-	/* Enable associated touchscreen if any */
-	if (panel->ts_compatible) {
-		offset = fdt_node_offset_by_compatible(fdt, -1, panel->ts_compatible);
-		if (offset < 0)
-			return;
-
-		ret = fdt_nop_property(fdt, offset, "status");
-		if (ret)
-			dprintf(CRITICAL, "Failed to NOP touchscreen status: %d\n", ret);
-	}
 }
 
 void lk2nd_update_device_tree(void *fdt, const char *cmdline)
@@ -464,4 +477,6 @@ void lk2nd_update_device_tree(void *fdt, const char *cmdline)
 
 	if (lk2nd_dev.panel.compatible)
 		lk2nd_update_panel_compatible(fdt);
+	lk2nd_update_touchscreen_compatible(fdt, lk2nd_dev.panel.ts_compatible);
+	lk2nd_update_touchscreen_compatible(fdt, lk2nd_dev.ts_compatible);
 }

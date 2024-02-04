@@ -24,7 +24,7 @@ struct lk2nd_device {
 	const char *carrier;
 	const char *radio;
 	const char *slot_suffix;
-
+	const char *ts_compatible;
 	void *pstore;
 	unsigned int pstore_size;
 	bool dev_mode;
